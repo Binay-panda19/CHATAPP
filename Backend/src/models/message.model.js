@@ -20,7 +20,7 @@ const messageSchema = Schema(
     },
   },
   {
-    timeStamps: true,
+    timestamps: true,
   }
 );
 
