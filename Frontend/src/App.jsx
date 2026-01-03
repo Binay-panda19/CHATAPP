@@ -10,12 +10,21 @@ import { useAuthStore } from "./store/useAuthStore.js";
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import useThemeStore from "./store/useThemeStore.js";
+import socket from "./lib/socket";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
   const { theme } = useThemeStore();
 
-  console.log({ onlineUsers });
+  // console.log({ onlineUsers });
+
+  useEffect(() => {
+    socket.on("newMessage", (msg) => {
+      console.log("🔥 SOCKET EVENT RECEIVED:", msg);
+    });
+
+    return () => socket.off("newMessage");
+  }, []);
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);

@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import http from "http";
 
 import app from "./app.js";
-import setupSocket from "./lib/socket.js";
+import { setupSocket } from "./lib/socket.js";
 import { connectDB } from "./lib/DB.lib.js";
 
 const __filename = fileURLToPath(import.meta.url);

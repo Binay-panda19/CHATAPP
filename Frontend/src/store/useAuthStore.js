@@ -88,17 +88,19 @@ export const useAuthStore = create((set, get) => ({
     const { authUser } = get();
     if (!authUser) return;
 
-    if (socket.connected) return; // 👈 critical
+    if (socket.connected) {
+      // console.warn("🚫 Socket already connected");
+      return;
+    }
 
     socket.io.opts.query = {
       userId: authUser._id,
     };
 
     socket.connect();
-
     set({ socket });
 
-    socket.off("getOnlineUsers"); // 👈 PREVENT DUPLICATES
+    socket.off("getOnlineUsers"); // 👈 prevent duplicates
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
