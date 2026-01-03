@@ -3,8 +3,7 @@ import authRoutes from "./routes/auth.route.js";
 import msgRoutes from "./routes/message.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-
-export const app = express();
+import { app } from "./lib/socket.js";
 
 app.use(express.json());
 app.use(cookieParser());

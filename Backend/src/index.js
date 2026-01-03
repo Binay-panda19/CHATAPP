@@ -11,13 +11,14 @@ dotenv.config({
 
 import { connectDB } from "./lib/DB.lib.js";
 import { app } from "./app.js";
+import { server } from "./lib/socket.js";
 
 const PORT = process.env.PORT || 5001;
 
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log("Server running on port", PORT);
     });
   } catch (error) {
