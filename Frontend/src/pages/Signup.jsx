@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
+import { GoogleLogin } from "@react-oauth/google";
 import {
   Eye,
   EyeOff,
@@ -21,7 +22,7 @@ const Signup = () => {
     password: "",
   });
 
-  const { signup, isSigningIn } = useAuthStore();
+  const { signup, isSigningIn, googleSignup } = useAuthStore();
 
   const validateForm = () => {
     if (!formData.fullName.trim()) return toast.error("Full name is required");
@@ -43,6 +44,10 @@ const Signup = () => {
     if (success) {
       signup(formData);
     }
+  };
+
+  const handleSuccess = (credentialResponse) => {
+    googleSignup(credentialResponse);
   };
 
   return (
@@ -153,6 +158,11 @@ const Signup = () => {
               )}
             </button>
           </form>
+
+          <GoogleLogin
+            onSuccess={handleSuccess}
+            onError={() => console.log("Google Login Failed")}
+          />
 
           <div className="text-center">
             <p className="text-base-content/60">

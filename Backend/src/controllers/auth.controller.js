@@ -2,6 +2,8 @@ import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/utils.js";
 import cloudinary from "../lib/cloudinary.js";
+import { OAuth2Client } from "google-auth-library";
+import axios from "axios";
 
 export const signup = async (req, res) => {
   try {
@@ -112,5 +114,117 @@ export const checkAuth = (req, res) => {
   } catch (error) {
     console.log("error in checkauth controller", error.message);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// const getGoogleUser = async (accessToken) => {
+//   const { data } = await axios.get(
+//     "https://www.googleapis.com/oauth2/v3/userinfo",
+//     {
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//       },
+//     }
+//   );
+//   return data;
+// };
+
+const getPayload = async (token) => {
+  const ticket = await client.verifyIdToken({
+    idToken: token,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  if (!payload) {
+    return null;
+  }
+  return payload;
+};
+
+export const googleSignup = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token missing" });
+    }
+
+    const payload = getPayload(token);
+    const { email, name, picture, sub } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        fullName: name,
+        email,
+        profilePic: picture,
+        googleId: sub,
+      });
+    }
+
+    const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res
+      .cookie("token", jwtToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      })
+      .json({ user });
+  } catch (error) {
+    res.status(401).json({ message: "Google auth failed" });
+  }
+};
+
+export const googleLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    // 1️⃣ Validate request
+    if (!token) {
+      return res.status(400).json({ message: "Google token missing" });
+    }
+
+    // 2️⃣ Verify Google ID token
+    const payload = getPayload(token);
+
+    const { email, name, picture, sub } = payload;
+
+    // 3️⃣ Find or create user
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        fullName: name,
+        email,
+        profilePic: picture,
+        googleId: sub,
+      });
+    }
+
+    // 4️⃣ Generate JWT (your app’s authority)
+    const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // 5️⃣ Set cookie
+    res
+      .cookie("token", jwtToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .status(200)
+      .json({ user });
+  } catch (error) {
+    console.error("Google login error:", error);
+    res.status(401).json({ message: "Google authentication failed" });
   }
 };

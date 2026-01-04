@@ -59,6 +59,42 @@ export const useAuthStore = create((set, get) => ({
       set({ isLogginIn: false });
     }
   },
+  googleSignup: async (credentialResponse) => {
+    set({ isSigningIn: true });
+    try {
+      const res = await axiosInstance.post(
+        "/auth/google/signup",
+        { token: credentialResponse.credential },
+        { withCredentials: true }
+      );
+      set({ authUser: res.data });
+      toast.success("Signed Up Successfully");
+      get().connectSocket();
+    } catch (error) {
+      console.log("google signup error", error.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      set({ isSigningIn: false });
+    }
+  },
+  googleLogin: async (credentialResponse) => {
+    set({ isLogginIn: true });
+    try {
+      const res = await axiosInstance.post(
+        "/auth/google/login",
+        { token: credentialResponse.credential },
+        { withCredentials: true }
+      );
+      set({ authUser: res.data });
+      toast.success("Logged In Successfully");
+      get().connectSocket();
+    } catch (error) {
+      console.log("google login error");
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      set({ isLogginIn: false });
+    }
+  },
 
   logout: async () => {
     try {
