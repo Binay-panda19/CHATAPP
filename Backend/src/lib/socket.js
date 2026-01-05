@@ -1,10 +1,10 @@
 import { Server } from "socket.io";
-import { Message } from "../models/Message.model.js";
-import Group from "../models/Group.model.js";
+import { Message } from "../models/message.model.js";
+import Group from "../models/group.model.js";
 
 let io;
 
-// userId -> Set of socketIds
+// userId -> Set(socketIds)
 const userSocketMap = {};
 
 export const setupSocket = (server) => {
@@ -37,8 +37,12 @@ export const setupSocket = (server) => {
     // =========================
     // GROUP ROOMS
     // =========================
-    socket.on("joinGroup", (groupId) => {
+    socket.on("joinGroup", async (groupId) => {
       if (!groupId) return;
+
+      const group = await Group.findById(groupId);
+      if (!group) return; // group expired or deleted
+
       socket.join(groupId);
     });
 
@@ -80,23 +84,26 @@ export const setupSocket = (server) => {
     });
 
     // =========================
-    // SEND GROUP MESSAGE
+    // SEND GROUP MESSAGE ✅ FIXED
     // =========================
     socket.on("sendGroupMessage", async ({ groupId, text, image }) => {
       if (!groupId || (!text && !image)) return;
 
       try {
+        // 🔒 Validate group existence
+        const group = await Group.findById(groupId);
+        if (!group) return;
+
+        // 🔒 Validate membership
+        if (!group.members.includes(userId)) return;
+
         const message = await Message.create({
           senderId: userId,
           groupId,
+          receiverId: null, // 🔥 REQUIRED
+          messageType: "group", // 🔥 REQUIRED
           text,
           image,
-          messageType: "group",
-        });
-
-        // update lastMessage for sidebar
-        await Group.findByIdAndUpdate(groupId, {
-          lastMessage: message._id,
         });
 
         const populatedMessage = await Message.findById(message._id).populate(

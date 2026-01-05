@@ -8,15 +8,21 @@ const messageSchema = Schema(
       required: true,
     },
     receiverId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
+      required: function () {
+        return this.messageType === "dm";
+      },
     },
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
       default: null,
       index: true,
+      required: function () {
+        return this.messageType === "group";
+      },
     },
     messageType: {
       type: String,

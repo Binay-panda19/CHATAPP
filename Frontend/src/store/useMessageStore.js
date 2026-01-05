@@ -43,18 +43,16 @@ export const useMessageStore = create((set, get) => ({
 
   setActiveChat: (chat) => {
     const socket = useAuthStore.getState().socket;
-
-    // leave previous group
     const prevChat = get().activeChat;
+
+    // leave old group
     if (prevChat?.type === "group") {
       socket?.emit("leaveGroup", prevChat.data._id);
     }
 
-    set({
-      activeChat: chat,
-      messages: [],
-    });
+    set({ activeChat: chat, messages: [] });
 
+    // 🔥 JOIN GROUP ROOM
     if (chat?.type === "group") {
       socket?.emit("joinGroup", chat.data._id);
     }
@@ -124,15 +122,13 @@ export const useMessageStore = create((set, get) => ({
     socket.off("newMessage");
     socket.off("newGroupMessage");
 
+    // DM listener
     socket.on("newMessage", (message) => {
       const { activeChat } = get();
-      if (!activeChat || activeChat.type !== "dm") return;
-
-      const chatUserId = activeChat.data._id;
-
       if (
-        message.senderId._id === chatUserId ||
-        message.receiverId?._id === chatUserId
+        activeChat?.type === "dm" &&
+        (message.senderId === activeChat.data._id ||
+          message.receiverId === activeChat.data._id)
       ) {
         set((state) => ({
           messages: [...state.messages, message],
@@ -140,11 +136,13 @@ export const useMessageStore = create((set, get) => ({
       }
     });
 
+    // 🔥 GROUP listener
     socket.on("newGroupMessage", (message) => {
       const { activeChat } = get();
-      if (!activeChat || activeChat.type !== "group") return;
-
-      if (message.groupId === activeChat.data._id) {
+      if (
+        activeChat?.type === "group" &&
+        String(message.groupId) === String(activeChat.data._id)
+      ) {
         set((state) => ({
           messages: [...state.messages, message],
         }));

@@ -66,11 +66,21 @@ export const getMessages = async (req, res) => {
 
 export const sendMessages = async (req, res) => {
   try {
-    const { chatType, receiverId, groupId, text, image } = req.body;
-    // const { id: receiverId } = req.params;
     const senderId = req.user.id;
 
-    if (!chatType || !["dm", "group"].includes(chatType)) {
+    // 🔑 normalize input
+    const {
+      chatType,
+      messageType: rawMessageType,
+      receiverId,
+      groupId,
+      text,
+      image,
+    } = req.body;
+
+    const messageType = chatType || rawMessageType;
+
+    if (!messageType || !["dm", "group"].includes(messageType)) {
       return res.status(400).json({ message: "Invalid chat type" });
     }
 
@@ -78,34 +88,38 @@ export const sendMessages = async (req, res) => {
       return res.status(400).json({ message: "Message cannot be empty" });
     }
 
-    if (chatType === "dm" && !receiverId) {
+    if (messageType === "dm" && !receiverId) {
       return res.status(400).json({ message: "receiverId is required for DM" });
     }
 
-    if (chatType === "group" && !groupId) {
+    if (messageType === "group" && !groupId) {
       return res.status(400).json({ message: "groupId is required for group" });
     }
 
-    let imageURl;
+    // =========================
+    // IMAGE UPLOAD
+    // =========================
+    let imageURL = null;
 
     if (image) {
-      //upload image to cloudinary
-      const uploadResponce = await cloudinary.uploader.upload(image);
-      imageURl = uploadResponce.secure_url;
+      const uploadResponse = await cloudinary.uploader.upload(image);
+      imageURL = uploadResponse.secure_url;
     }
 
+    // =========================
+    // CREATE MESSAGE ✅
+    // =========================
     const message = await Message.create({
       senderId,
-      receiverId: chatType === "dm" ? receiverId : null,
-      groupId: chatType === "group" ? groupId : null,
+      receiverId: messageType === "dm" ? receiverId : null, // 🔥 explicit
+      groupId: messageType === "group" ? groupId : null,
+      messageType, // 🔥 guaranteed correct
       text,
-      image,
-      messageType: chatType,
+      image: imageURL,
     });
 
-    //update group last msg
-
-    if (chatType === "group") {
+    // update group last message
+    if (messageType === "group") {
       await Group.findByIdAndUpdate(groupId, {
         lastMessage: message._id,
       });
@@ -115,17 +129,9 @@ export const sendMessages = async (req, res) => {
       .populate("senderId", "fullName profilePic")
       .populate("receiverId", "fullName profilePic");
 
-    //todo: real time send functionality
-    // const socketIds = getReceiverSocketIds(receiverId);
-
-    // socketIds.forEach((id) => {
-    //   getIO().to(id).emit("newMessage", newMessage);
-    // });
-    // res.status(201).json(newMessage);
-
     res.status(201).json(populatedMessage);
   } catch (error) {
-    console.error("Error in sendMessages: ", error.message);
+    console.error("Error in sendMessages:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

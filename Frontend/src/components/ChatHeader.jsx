@@ -16,10 +16,20 @@ const ChatHeader = () => {
   const chat = activeChat.data;
 
   // Timer (group only)
-  const timeLeft = isGroup ? useCountdown(chat.expiresAt) : null;
+  const expiresAt =
+    activeChat?.type === "group" ? activeChat.data.expiresAt : null;
+  const timeLeft = useCountdown(expiresAt);
 
   // Admin check
-  const isAdmin = isGroup && chat.admin === authUser._id;
+  const adminId = typeof chat.admin === "object" ? chat.admin._id : chat.admin;
+
+  const isAdmin = isGroup && String(adminId) === String(authUser._id);
+
+  // console.log("ADMIN CHECK", {
+  //   chatAdmin: chat.admin,
+  //   authUserId: authUser._id,
+  //   isEqual: String(chat.admin) === String(authUser._id),
+  // });
 
   const copyInviteLink = async () => {
     const res = await axiosInstance.post(`/groups/${chat._id}/invite`);

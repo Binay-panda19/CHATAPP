@@ -54,7 +54,10 @@ const App = () => {
           path="/login"
           element={!authUser ? <Login /> : <Navigate to="/" />}
         />
-        <Route path="/groups/invite/:token" element={<JoinGroupViaInvite />} />
+        <Route
+          path="/groups/invite/:token"
+          element={authUser ? <JoinGroupViaInvite /> : <Navigate to="/login" />}
+        />
 
         <Route path="/settings" element={<Settings />} />
         <Route
