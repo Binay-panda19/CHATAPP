@@ -1,14 +1,17 @@
-import { X, Clock, Link2, Trash2, TimerReset } from "lucide-react";
+import { X, Clock, Link2, Trash2, TimerReset, Info } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useMessageStore } from "../store/useMessageStore";
 import { useCountdown } from "../lib/useCountdown";
 import { toast } from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
+import { useNavigate } from "react-router-dom";
 
 const ChatHeader = () => {
   const { activeChat, clearActiveChat, endGroup, extendGroup } =
     useMessageStore();
-  const { authUser } = useAuthStore();
+  const { authUser, onlineUsers } = useAuthStore();
+
+  const navigate = useNavigate();
 
   // if (!activeChat) return null;
 
@@ -51,6 +54,10 @@ const ChatHeader = () => {
     toast.success("Chat extended by 30 minutes");
   };
 
+  const openInfo = () => {
+    navigate(isGroup ? "/profile?mode=group" : "/profile");
+  };
+
   return (
     <div className="p-3 border-b border-base-300 flex items-center justify-between">
       {/* LEFT: Info */}
@@ -78,7 +85,7 @@ const ChatHeader = () => {
             </span>
           ) : (
             <span className="text-xs text-zinc-400">
-              {chat.isOnline ? "Online" : "Offline"}
+              {onlineUsers.includes(chat._id) ? "Online" : "Offline"}
             </span>
           )}
         </div>
@@ -127,6 +134,13 @@ const ChatHeader = () => {
           </>
         )}
 
+        <button
+          onClick={openInfo}
+          className="btn btn-sm btn-ghost"
+          title="Info"
+        >
+          <Info size={18} />
+        </button>
         <button onClick={clearActiveChat} className="btn btn-sm btn-ghost">
           <X size={18} />
         </button>

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "./components/Navbar";
-import { Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -13,12 +14,31 @@ import { Toaster } from "react-hot-toast";
 import useThemeStore from "./store/useThemeStore.js";
 import socket from "./lib/socket";
 
+// -------------------------
+// Page animation wrapper
+// -------------------------
+const PageWrapper = ({ children }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="min-h-screen"
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
   const { theme } = useThemeStore();
+  const location = useLocation();
 
-  // console.log({ onlineUsers });
-
+  // -------------------------
+  // Socket debug (optional)
+  // -------------------------
   useEffect(() => {
     socket.on("newMessage", (msg) => {
       console.log("🔥 SOCKET EVENT RECEIVED:", msg);
@@ -26,10 +46,17 @@ const App = () => {
 
     return () => socket.off("newMessage");
   }, []);
+
+  // -------------------------
+  // Auth check
+  // -------------------------
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
+  // -------------------------
+  // Loader
+  // -------------------------
   if (isCheckingAuth && !authUser) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -41,32 +68,91 @@ const App = () => {
   return (
     <div data-theme={theme}>
       <Navbar />
-      <Routes>
-        <Route
-          path="/"
-          element={authUser ? <Home /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/signup"
-          element={!authUser ? <Signup /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/login"
-          element={!authUser ? <Login /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/groups/invite/:token"
-          element={authUser ? <JoinGroupViaInvite /> : <Navigate to="/login" />}
-        />
 
-        <Route path="/settings" element={<Settings />} />
-        <Route
-          path="/profile"
-          element={authUser ? <Profile /> : <Navigate to="/login" />}
-        />
-      </Routes>
+      {/* 🔥 Animated Routes */}
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname + location.search}>
+          <Route
+            path="/"
+            element={
+              authUser ? (
+                <PageWrapper>
+                  <Home />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
 
-      <Toaster />
+          <Route
+            path="/signup"
+            element={
+              !authUser ? (
+                <PageWrapper>
+                  <Signup />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/" />
+              )
+            }
+          />
+
+          <Route
+            path="/login"
+            element={
+              !authUser ? (
+                <PageWrapper>
+                  <Login />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/" />
+              )
+            }
+          />
+
+          <Route
+            path="/groups/invite/:token"
+            element={
+              authUser ? (
+                <PageWrapper>
+                  <JoinGroupViaInvite />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              authUser ? (
+                <PageWrapper>
+                  <Settings />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              authUser ? (
+                <PageWrapper>
+                  <Profile />
+                </PageWrapper>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+        </Routes>
+      </AnimatePresence>
+
+      <Toaster position="top-right" />
     </div>
   );
 };

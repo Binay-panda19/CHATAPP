@@ -27,7 +27,7 @@ const Sidebar = () => {
   useEffect(() => {
     getUsers();
     getGroups();
-  }, []);
+  }, [activeChat]);
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
