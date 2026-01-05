@@ -35,6 +35,11 @@ const messageSchema = Schema(
     image: {
       type: String,
     },
+    expiresAt: {
+      type: Date,
+      default: null,
+      index: { expires: 0 }, // TTL
+    },
   },
   {
     timestamps: true,

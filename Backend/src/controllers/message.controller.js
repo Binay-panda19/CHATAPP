@@ -109,6 +109,9 @@ export const sendMessages = async (req, res) => {
     // =========================
     // CREATE MESSAGE ✅
     // =========================
+
+    const group = Group.findById({ groupId });
+
     const message = await Message.create({
       senderId,
       receiverId: messageType === "dm" ? receiverId : null, // 🔥 explicit
@@ -116,6 +119,7 @@ export const sendMessages = async (req, res) => {
       messageType, // 🔥 guaranteed correct
       text,
       image: imageURL,
+      expiresAt: group.expiresAt,
     });
 
     // update group last message
