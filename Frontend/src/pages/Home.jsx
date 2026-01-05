@@ -4,7 +4,7 @@ import ChatContainer from "../components/ChatContainer";
 import { useMessageStore } from "../store/useMessageStore";
 
 const Home = () => {
-  const { selectedUser } = useMessageStore();
+  const { activeChat } = useMessageStore();
   return (
     <div className="h-screen bg-base-200">
       <div className="flex items-center justify-center pt-20 px-4">
@@ -12,7 +12,7 @@ const Home = () => {
           <div className="flex h-full rounded-lg overflow-hidden">
             <Sidebar />
 
-            {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
+            {!activeChat ? <NoChatSelected /> : <ChatContainer />}
           </div>
         </div>
       </div>

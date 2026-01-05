@@ -6,6 +6,7 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
+import JoinGroupViaInvite from "./components/JoinGroupViaInvite.jsx";
 import { useAuthStore } from "./store/useAuthStore.js";
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
@@ -53,6 +54,8 @@ const App = () => {
           path="/login"
           element={!authUser ? <Login /> : <Navigate to="/" />}
         />
+        <Route path="/groups/invite/:token" element={<JoinGroupViaInvite />} />
+
         <Route path="/settings" element={<Settings />} />
         <Route
           path="/profile"

@@ -1,7 +1,10 @@
 import { Server } from "socket.io";
+import { Message } from "../models/Message.model.js";
+import Group from "../models/Group.model.js";
 
 let io;
 
+// userId -> Set of socketIds
 const userSocketMap = {};
 
 export const setupSocket = (server) => {
@@ -13,21 +16,107 @@ export const setupSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    const userId = socket.handshake.query.userId;
-    if (!userId) return;
+    const { userId } = socket.handshake.query;
 
+    // 🔒 Reject unauthenticated sockets
+    if (!userId) {
+      socket.disconnect();
+      return;
+    }
+
+    // =========================
+    // TRACK USER SOCKETS
+    // =========================
     if (!userSocketMap[userId]) {
       userSocketMap[userId] = new Set();
     }
-
     userSocketMap[userId].add(socket.id);
 
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-    // console.log("🧩 userSocketMap:", userSocketMap);
+    // =========================
+    // GROUP ROOMS
+    // =========================
+    socket.on("joinGroup", (groupId) => {
+      if (!groupId) return;
+      socket.join(groupId);
+    });
 
+    socket.on("leaveGroup", (groupId) => {
+      if (!groupId) return;
+      socket.leave(groupId);
+    });
+
+    // =========================
+    // SEND DM MESSAGE
+    // =========================
+    socket.on("sendMessage", async ({ receiverId, text, image }) => {
+      if (!receiverId || (!text && !image)) return;
+
+      try {
+        const message = await Message.create({
+          senderId: userId,
+          receiverId,
+          text,
+          image,
+          messageType: "dm",
+        });
+
+        const populatedMessage = await Message.findById(message._id)
+          .populate("senderId", "fullName profilePic")
+          .populate("receiverId", "fullName profilePic");
+
+        // send to receiver (all tabs)
+        const receiverSockets = userSocketMap[receiverId];
+        receiverSockets?.forEach((socketId) => {
+          io.to(socketId).emit("newMessage", populatedMessage);
+        });
+
+        // echo back to sender
+        socket.emit("newMessage", populatedMessage);
+      } catch (error) {
+        console.error("DM socket error:", error);
+      }
+    });
+
+    // =========================
+    // SEND GROUP MESSAGE
+    // =========================
+    socket.on("sendGroupMessage", async ({ groupId, text, image }) => {
+      if (!groupId || (!text && !image)) return;
+
+      try {
+        const message = await Message.create({
+          senderId: userId,
+          groupId,
+          text,
+          image,
+          messageType: "group",
+        });
+
+        // update lastMessage for sidebar
+        await Group.findByIdAndUpdate(groupId, {
+          lastMessage: message._id,
+        });
+
+        const populatedMessage = await Message.findById(message._id).populate(
+          "senderId",
+          "fullName profilePic"
+        );
+
+        // emit to group room
+        io.to(groupId).emit("newGroupMessage", populatedMessage);
+      } catch (error) {
+        console.error("Group socket error:", error);
+      }
+    });
+
+    // =========================
+    // DISCONNECT
+    // =========================
     socket.on("disconnect", () => {
       userSocketMap[userId]?.delete(socket.id);
+
       if (userSocketMap[userId]?.size === 0) {
         delete userSocketMap[userId];
       }
@@ -35,10 +124,11 @@ export const setupSocket = (server) => {
       io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
   });
-
-  // console.log("🟢 Socket.IO initialized");
 };
 
+// =========================
+// HELPERS
+// =========================
 export const getIO = () => {
   if (!io) {
     throw new Error("Socket.io not initialized");
@@ -47,5 +137,5 @@ export const getIO = () => {
 };
 
 export const getReceiverSocketIds = (userId) => {
-  return userSocketMap[userId] || [];
+  return Array.from(userSocketMap[userId] || []);
 };

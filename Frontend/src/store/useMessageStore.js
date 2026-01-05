@@ -1,92 +1,226 @@
 import { create } from "zustand";
 import { toast } from "react-hot-toast";
-
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 
 export const useMessageStore = create((set, get) => ({
+  // STATE
   messages: [],
   users: [],
+  groups: [],
 
-  selectedUser: null,
+  activeChat: null, // { type: "dm" | "group", data }
   isUsersLoading: false,
   isMessagesLoading: false,
+
+  // USERS (DM SIDEBAR)
 
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/msg/users");
-
       set({ users: res.data });
     } catch (error) {
-      console.log("error in Get Users");
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to fetch users");
     } finally {
       set({ isUsersLoading: false });
     }
   },
 
-  getMessages: async (userId) => {
-    set({ isMessagesLoading: true });
-    try {
-      const res = await axiosInstance.get(`/msg/${userId}`);
+  // GROUPS (GROUP SIDEBAR)
 
+  getGroups: async () => {
+    try {
+      const res = await axiosInstance.get("/groups");
+      set({ groups: res.data.groups });
+    } catch (error) {
+      toast.error("Failed to fetch groups");
+      console.log("get group error ", error.message);
+    }
+  },
+
+  // SET ACTIVE CHAT
+
+  setActiveChat: (chat) => {
+    const socket = useAuthStore.getState().socket;
+
+    // leave previous group
+    const prevChat = get().activeChat;
+    if (prevChat?.type === "group") {
+      socket?.emit("leaveGroup", prevChat.data._id);
+    }
+
+    set({
+      activeChat: chat,
+      messages: [],
+    });
+
+    if (chat?.type === "group") {
+      socket?.emit("joinGroup", chat.data._id);
+    }
+  },
+
+  clearActiveChat: () => {
+    const socket = useAuthStore.getState().socket;
+    const { activeChat } = get();
+
+    if (activeChat?.type === "group") {
+      socket?.emit("leaveGroup", activeChat.data._id);
+    }
+
+    set({ activeChat: null, messages: [] });
+  },
+
+  // GET MESSAGES (REST)
+
+  getMessages: async () => {
+    const { activeChat } = get();
+    if (!activeChat) return;
+
+    set({ isMessagesLoading: true });
+
+    try {
+      const res = await axiosInstance.get(
+        `/msg/${activeChat.type}/${activeChat.data._id}`
+      );
       set({ messages: res.data });
     } catch (error) {
-      console.log("error in Get Messages");
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to load messages");
     } finally {
       set({ isMessagesLoading: false });
     }
   },
 
-  sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
-    try {
-      const res = await axiosInstance.post(
-        `/msg/send/${selectedUser._id}`,
-        messageData
-      );
-      set({ messages: [...messages, res.data] });
-    } catch (error) {
-      console.log("error in send message");
-      toast.error(error.response.data.message || "something went wrong !!");
+  // SEND MESSAGE (SOCKET)
+
+  sendMessage: ({ text, image }) => {
+    const { activeChat } = get();
+    const socket = useAuthStore.getState().socket;
+
+    if (!activeChat || !socket) return;
+
+    if (activeChat.type === "dm") {
+      socket.emit("sendMessage", {
+        receiverId: activeChat.data._id,
+        text,
+        image,
+      });
+    }
+
+    if (activeChat.type === "group") {
+      socket.emit("sendGroupMessage", {
+        groupId: activeChat.data._id,
+        text,
+        image,
+      });
     }
   },
 
-  setSelectedUser: (selectedUser) => {
-    set({ selectedUser });
-  },
-
+  // SOCKET LISTENERS
   subscribeToMessages: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
-
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
     socket.off("newMessage");
+    socket.off("newGroupMessage");
 
-    socket.on("newMessage", (newMessage) => {
-      console.log("📩 Received socket message:", newMessage);
+    socket.on("newMessage", (message) => {
+      const { activeChat } = get();
+      if (!activeChat || activeChat.type !== "dm") return;
 
-      const { selectedUser } = get();
+      const chatUserId = activeChat.data._id;
 
       if (
-        newMessage.senderId !== selectedUser._id &&
-        newMessage.receiverId !== selectedUser._id
+        message.senderId._id === chatUserId ||
+        message.receiverId?._id === chatUserId
       ) {
-        return;
+        set((state) => ({
+          messages: [...state.messages, message],
+        }));
       }
+    });
 
-      set((state) => ({
-        messages: [...state.messages, newMessage],
-      }));
+    socket.on("newGroupMessage", (message) => {
+      const { activeChat } = get();
+      if (!activeChat || activeChat.type !== "group") return;
+
+      if (message.groupId === activeChat.data._id) {
+        set((state) => ({
+          messages: [...state.messages, message],
+        }));
+      }
     });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket.off("newMessage");
+    socket?.off("newMessage");
+    socket?.off("newGroupMessage");
+  },
+
+  // group create and join
+
+  // CREATE GROUP
+
+  createGroup: async ({ name, password }) => {
+    try {
+      const res = await axiosInstance.post("/groups/create", {
+        name,
+        password,
+      });
+
+      set((state) => ({
+        groups: [res.data, ...state.groups],
+      }));
+
+      toast.success("Group created");
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create group");
+    }
+  },
+
+  // JOIN GROUP
+
+  joinGroup: async ({ groupId, password }) => {
+    try {
+      const res = await axiosInstance.post("/groups/join", {
+        groupId,
+        password,
+      });
+
+      set((state) => ({
+        groups: [res.data, ...state.groups],
+      }));
+
+      toast.success("Joined group");
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to join group");
+    }
+  },
+
+  endGroup: async (groupId) => {
+    await axiosInstance.delete(`/groups/${groupId}`);
+    set((state) => ({
+      groups: state.groups.filter((g) => g._id !== groupId),
+      activeChat: null,
+    }));
+  },
+
+  extendGroup: async (groupId) => {
+    const res = await axiosInstance.patch(`/groups/${groupId}/extend`);
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g._id === groupId ? { ...g, expiresAt: res.data.expiresAt } : g
+      ),
+      activeChat:
+        state.activeChat?.data._id === groupId
+          ? {
+              ...state.activeChat,
+              data: { ...state.activeChat.data, expiresAt: res.data.expiresAt },
+            }
+          : state.activeChat,
+    }));
   },
 }));
