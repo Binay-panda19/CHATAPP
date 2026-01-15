@@ -152,7 +152,7 @@ const App = () => {
         </Routes>
       </AnimatePresence>
 
-      <Toaster position="top-right" />
+      <Toaster />
     </div>
   );
 };
