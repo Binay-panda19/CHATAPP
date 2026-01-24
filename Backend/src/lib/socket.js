@@ -90,28 +90,28 @@ export const setupSocket = (server) => {
       if (!groupId || (!text && !image)) return;
 
       try {
-        // 🔒 Validate group existence
         const group = await Group.findById(groupId);
         if (!group) return;
 
-        // 🔒 Validate membership
-        if (!group.members.includes(userId)) return;
+        // 🔥 FIXED membership check
+        const isMember = group.members.some(
+          (memberId) => memberId.toString() === userId,
+        );
+        if (!isMember) return;
 
         const message = await Message.create({
           senderId: userId,
           groupId,
-          receiverId: null, // 🔥 REQUIRED
-          messageType: "group", // 🔥 REQUIRED
+          messageType: "group",
           text,
           image,
         });
 
         const populatedMessage = await Message.findById(message._id).populate(
           "senderId",
-          "fullName profilePic"
+          "fullName profilePic",
         );
 
-        // emit to group room
         io.to(groupId).emit("newGroupMessage", populatedMessage);
       } catch (error) {
         console.error("Group socket error:", error);

@@ -79,7 +79,7 @@ export const useMessageStore = create((set, get) => ({
 
     try {
       const res = await axiosInstance.get(
-        `/msg/${activeChat.type}/${activeChat.data._id}`
+        `/msg/${activeChat.type}/${activeChat.data._id}`,
       );
       set({ messages: res.data });
     } catch (error) {
@@ -125,10 +125,21 @@ export const useMessageStore = create((set, get) => ({
     // DM listener
     socket.on("newMessage", (message) => {
       const { activeChat } = get();
+      if (activeChat?.type !== "dm") return;
+
+      const senderId =
+        typeof message.senderId === "object"
+          ? message.senderId._id
+          : message.senderId;
+
+      const receiverId =
+        typeof message.receiverId === "object"
+          ? message.receiverId._id
+          : message.receiverId;
+
       if (
-        activeChat?.type === "dm" &&
-        (message.senderId === activeChat.data._id ||
-          message.receiverId === activeChat.data._id)
+        senderId === activeChat.data._id ||
+        receiverId === activeChat.data._id
       ) {
         set((state) => ({
           messages: [...state.messages, message],
@@ -210,7 +221,7 @@ export const useMessageStore = create((set, get) => ({
     const res = await axiosInstance.patch(`/groups/${groupId}/extend`);
     set((state) => ({
       groups: state.groups.map((g) =>
-        g._id === groupId ? { ...g, expiresAt: res.data.expiresAt } : g
+        g._id === groupId ? { ...g, expiresAt: res.data.expiresAt } : g,
       ),
       activeChat:
         state.activeChat?.data._id === groupId

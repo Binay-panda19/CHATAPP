@@ -22,16 +22,12 @@ const ChatContainer = () => {
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
-  // =========================
   // Auto scroll
-  // =========================
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // =========================
   // Load messages + sockets
-  // =========================
   useEffect(() => {
     if (!activeChat) return;
 
