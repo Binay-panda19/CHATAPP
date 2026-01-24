@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Users, UsersRound } from "lucide-react";
+import { MessageCircle, Users2 } from "lucide-react";
 import { useMessageStore } from "../store/useMessageStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
@@ -32,27 +32,38 @@ const Sidebar = () => {
   if (isUsersLoading) return <SidebarSkeleton />;
 
   return (
-    <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col">
+    <aside
+      className="
+    h-full
+    w-16 md:w-24 lg:w-72
+    border-r border-base-300
+    flex flex-col
+    bg-base-100
+  "
+    >
       {/* ================= HEADER ================= */}
-      <div className="border-b border-base-300 p-3">
-        <div className="flex gap-2">
+
+      <div className="border-b border-base-300 p-2">
+        <div className="flex flex-col items-center gap-2">
+          {/* DM BUTTON */}
           <button
             onClick={() => setActiveTab("dm")}
-            className={`flex-1 btn btn-sm ${
-              activeTab === "dm" ? "btn-primary" : "btn-ghost"
-            }`}
+            className={`btn btn-sm w-full max-w-[48px] lg:max-w-none lg:w-full
+        flex items-center justify-center gap-2
+        ${activeTab === "dm" ? "btn-primary" : "btn-ghost"}`}
           >
-            <Users className="size-4" />
+            <MessageCircle size={16} />
             <span className="hidden lg:inline">DMs</span>
           </button>
 
+          {/* GROUP BUTTON */}
           <button
             onClick={() => setActiveTab("group")}
-            className={`flex-1 btn btn-sm ${
-              activeTab === "group" ? "btn-primary" : "btn-ghost"
-            }`}
+            className={`btn btn-sm w-full max-w-[48px] lg:max-w-none lg:w-full
+        flex items-center justify-center gap-2
+        ${activeTab === "group" ? "btn-primary" : "btn-ghost"}`}
           >
-            <UsersRound className="size-4" />
+            <Users2 size={16} />
             <span className="hidden lg:inline">Groups</span>
           </button>
         </div>
@@ -77,12 +88,12 @@ const Sidebar = () => {
                   <img
                     src={
                       user.profilePic ||
-                      "https://t3.ftcdn.net/jpg/05/00/54/28/360_F_500542898_LpYSy4RGAi95aDim3TLtSgCNUxNlOlcM.jpg"
+                      " https://t3.ftcdn.net/jpg/05/00/54/28/360_F_500542898_LpYSy4RGAi95aDim3TLtSgCNUxNlOlcM.jpg"
                     }
-                    className="size-12 rounded-full object-cover"
+                    className="size-10 sm:size-12 rounded-full object-cover"
                   />
                   {onlineUsers.includes(user._id) && (
-                    <span className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full ring-2 ring-base-100" />
+                    <span className="absolute bottom-0 right-0 size-2.5 sm:size-3 bg-green-500 rounded-full ring-2 ring-base-100" />
                   )}
                 </div>
 
@@ -101,58 +112,58 @@ const Sidebar = () => {
         {activeTab === "group" && (
           <>
             {/* Create / Join Buttons */}
-            <div className="flex gap-2 p-2">
+
+            <div className="flex flex-col items-center gap-2 p-2">
               <button
-                className="btn btn-sm flex-1"
                 onClick={() => setShowCreate(true)}
+                className="btn btn-sm w-full max-w-[48px] lg:max-w-none lg:w-full flex items-center justify-center gap-2"
               >
-                <Plus size={16} /> Create
+                <Plus size={16} />
+                <span className="hidden lg:inline">Create</span>
               </button>
 
               <button
-                className="btn btn-sm flex-1"
                 onClick={() => setShowJoin(true)}
+                className="btn btn-sm w-full max-w-[48px] lg:max-w-none lg:w-full flex items-center justify-center gap-2"
               >
-                <LogIn size={16} /> Join
+                <LogIn size={16} />
+                <span className="hidden lg:inline">Join</span>
               </button>
             </div>
 
             {/* Groups List */}
             <div className="flex flex-col">
-              {Array.isArray(groups) &&
-                groups.map((group) => {
-                  const isActive =
-                    activeChat?.type === "group" &&
-                    activeChat.data?._id === group._id;
+              {groups.map((group) => {
+                const isActive =
+                  activeChat?.type === "group" &&
+                  activeChat.data?._id === group._id;
 
-                  return (
-                    <button
-                      key={group._id}
-                      onClick={() =>
-                        setActiveChat({ type: "group", data: group })
+                return (
+                  <button
+                    key={group._id}
+                    onClick={() =>
+                      setActiveChat({ type: "group", data: group })
+                    }
+                    className={`w-full p-3 flex items-center gap-3 hover:bg-base-300
+              ${isActive ? "bg-base-300 ring-1 ring-base-300" : ""}`}
+                  >
+                    <img
+                      src={
+                        group.groupPic ||
+                        "https://cdn-icons-png.flaticon.com/512/681/681494.png"
                       }
-                      className={`w-full p-3 flex items-center gap-3 hover:bg-base-300
-                ${isActive ? "bg-base-300 ring-1 ring-base-300" : ""}`}
-                    >
-                      <div className="mx-auto lg:mx-0">
-                        <img
-                          src={
-                            group.groupPic ||
-                            "https://cdn-icons-png.flaticon.com/512/681/681494.png"
-                          }
-                          className="size-12 rounded-full object-cover"
-                        />
-                      </div>
+                      className="size-10 sm:size-12 rounded-full object-cover mx-auto lg:mx-0"
+                    />
 
-                      <div className="hidden lg:block text-left min-w-0">
-                        <div className="font-medium truncate">{group.name}</div>
-                        <div className="text-sm text-zinc-400">
-                          {group.members.length} members
-                        </div>
+                    <div className="hidden lg:block text-left min-w-0">
+                      <div className="font-medium truncate">{group.name}</div>
+                      <div className="text-sm text-zinc-400">
+                        {group.members.length} members
                       </div>
-                    </button>
-                  );
-                })}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
