@@ -127,13 +127,9 @@ const App = () => {
           <Route
             path="/settings"
             element={
-              authUser ? (
-                <PageWrapper>
-                  <Settings />
-                </PageWrapper>
-              ) : (
-                <Navigate to="/login" />
-              )
+              <PageWrapper>
+                <Settings />
+              </PageWrapper>
             }
           />
 
