@@ -4,7 +4,6 @@ A real-time chat application built with MERN + Socket.IO, supporting direct mess
 
 This project focuses on privacy, real-time communication, and clean backend architecture.
 
-
 <h2>✨ Features</h2>
 <h3>🔐 Authentication</h3>
 
@@ -23,7 +22,6 @@ Online/offline status
 Image support
 
 Persistent message history
-
 
 <h3>👥 Ephemeral Group Chats</h3>
 
@@ -47,7 +45,6 @@ Invite via link
 
 Secure group membership validation
 
-
 <h3>⏱ Auto-Destruction (Privacy First)</h3>
 
 MongoDB TTL indexes for:
@@ -62,7 +59,6 @@ No background workers
 
 Works even if the server is down
 
-
 <h3>⚡ Real-Time Communication</h3>
 
 Socket.IO for:
@@ -76,7 +72,6 @@ Online presence
 Multiple tabs per user supported
 
 Group room isolation
-
 
 <h3>🛠 Tech Stack</h3>
 Frontend
@@ -103,7 +98,6 @@ JWT Authentication
 
 Cloudinary (image uploads)
 
-
 <h3>🧠 Architecture Highlights</h3>
 
 Single Message Schema for both DMs and Groups
@@ -117,7 +111,6 @@ Socket + HTTP parity (same data rules)
 Secure role-based admin actions
 
 No orphaned data
-
 
 <h3>📁 Folder Structure (Simplified)</h3>
 ```
@@ -139,6 +132,7 @@ No orphaned data
 <h3>⚙️ Environment Variables</h3>
 
 Backend (.env)
+
 ```
 PORT=5001
 MONGO_URI=your_mongodb_uri
@@ -150,12 +144,14 @@ CLOUDINARY_API_SECRET=xxx
 ```
 
 Frontend (.env)
+
 ```
-VITE_API_URL=http://localhost:5001/api
+VITE_API_URL=https://chatapp-eta-bice.vercel.app/api
 ```
 
 ▶️ Getting Started
 1️⃣ Clone the repository
+
 ```
 git clone https://github.com/Binay-panda19/CHATAPP.git
 cd CHATAPP
@@ -170,7 +166,6 @@ cd backend
 npm install
 npm run dev
 ```
-
 
 Frontend
 
@@ -187,7 +182,6 @@ Group expires	MongoDB TTL deletes all messages
 Admin deletes group	Backend instantly deletes group + messages
 Server down	TTL still works
 
-
 <h3>🧪 Key Validations</h3>
 
 DM messages require receiverId
@@ -199,8 +193,6 @@ Group messages never require receiverId
 Only group members can send messages
 
 Only admin can end or extend group
-
-
 
 <h3>🧠 Learning Outcomes
 </h3>
@@ -218,8 +210,6 @@ Secure role-based actions
 
 Zustand + Socket synchronization
 
-
-
 <h3>🚀 Future Enhancements</h3>
 
 Typing indicators
@@ -234,12 +224,9 @@ Group chat history export
 
 End-to-end encryption (E2EE)
 
-
-
 <h3>🤝 Contributing</h3>
 
 Pull requests are welcome.
 Feel free to open an issue for suggestions or improvements.
-
 
 <h2>⭐ If you found this project useful, consider giving it a star!</h2>
