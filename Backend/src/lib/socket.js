@@ -10,7 +10,7 @@ const userSocketMap = {};
 export const setupSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: "https://chatapp-eta-bice.vercel.app/",
       credentials: true,
     },
   });

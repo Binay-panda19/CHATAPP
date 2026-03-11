@@ -12,9 +12,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://chatapp-eta-bice.vercel.app/",
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api/auth", authRoutes);
